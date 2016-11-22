@@ -47,7 +47,7 @@ private:
     // 2) once: if threadLoop() returns false, the thread will exit upon return.
     virtual bool        threadLoop() = 0;
 private:
-    static  int             _threadLoop(void* user);
+    static  void*             _threadLoop(void* user);
     // always hold mLock when reading or writing
     pthread_t     mThread;
     mutable Mutex           mLock;

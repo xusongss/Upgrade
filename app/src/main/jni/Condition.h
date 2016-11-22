@@ -5,7 +5,11 @@
 #ifndef BARCODEUPDATE_CONDITION_H
 #define BARCODEUPDATE_CONDITION_H
 
+#include <sys/types.h>
 #include <stdint.h>
+#include <pthread.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include "Mutex.h"
 typedef long long nsecs_t;
 /*

@@ -113,7 +113,7 @@ BarCodeSerialUpdateEventListener::~BarCodeSerialUpdateEventListener()
 JNIEXPORT void JNICALL Java_com_ipspiry_barcodeupdate_BarCodeSerialUpdate_nativeClassInit
   (JNIEnv *env, jclass classzz)
   {
-    g_field.mDeviceNativePointer = env->GetFieldID(classzz, BarCodeSerialUpdate_mDeviceNativePointer_Jni_Id, "I");
+    g_field.mDeviceNativePointer = env->GetFieldID(classzz, BarCodeSerialUpdate_mDeviceNativePointer_Jni_Id, "J");
     if(g_field.mDeviceNativePointer == NULL)
     {
       LOGE(LOG_TAG, "can't find com/ipspiry/barcodeupdate/BarCodeSerialUpdate.%s",
@@ -122,14 +122,14 @@ JNIEXPORT void JNICALL Java_com_ipspiry_barcodeupdate_BarCodeSerialUpdate_native
       g_field.postEvent = env->GetStaticMethodID(classzz, "postEventFromNative",
                                                 "(IIILjava/lang/Object;)V");
       if (g_field.postEvent == NULL) {
-          LOGE(LOG_TAG,"can't find android/graphics/SurfaceTexture.postEventFromNative");
+          LOGE(LOG_TAG,"can't find com/ipspiry/barcodeupdate/BarCodeSerialUpdate.postEventFromNative");
       }
       env->GetJavaVM(&gVM); //保存到全局变量中JVM
 
   }
 static void BarCodeSerialUpdate_setDeviceNativePointer(JNIEnv* env, jobject thizz, SerialDevice * pdevice)
 {
-    env->SetIntField(thizz, g_field.mDeviceNativePointer, (int)pdevice);
+    env->SetLongField(thizz, g_field.mDeviceNativePointer, (long)pdevice);
 }
 /**
  * openNative
@@ -166,7 +166,7 @@ JNIEXPORT jint JNICALL Java_com_ipspiry_barcodeupdate_BarCodeSerialUpdate_closeN
         (JNIEnv *env, jobject thizz)
 {
     SerialDevice * pdevice = NULL;
-    pdevice = (SerialDevice*)env->GetIntField(thizz, g_field.mDeviceNativePointer);
+    pdevice = (SerialDevice*)env->GetLongField(thizz, g_field.mDeviceNativePointer);
 
     if(pdevice == NULL)
     {
@@ -183,7 +183,7 @@ JNIEXPORT jint JNICALL Java_com_ipspiry_barcodeupdate_BarCodeSerialUpdate_update
 {
     int ret = 0;
     SerialDevice * pdevice = NULL;
-    pdevice = (SerialDevice*)env->GetIntField(thizz, g_field.mDeviceNativePointer);
+    pdevice = (SerialDevice*)env->GetLongField(thizz, g_field.mDeviceNativePointer);
 
     if(pdevice == NULL)
     {
@@ -205,7 +205,7 @@ JNIEXPORT jstring JNICALL Java_com_ipspiry_barcodeupdate_BarCodeSerialUpdate_get
         (JNIEnv *env, jobject thizz)
 {
     SerialDevice * pdevice = NULL;
-    pdevice = (SerialDevice*)env->GetIntField(thizz, g_field.mDeviceNativePointer);
+    pdevice = (SerialDevice*)env->GetLongField(thizz, g_field.mDeviceNativePointer);
 
     if(pdevice == NULL)
     {

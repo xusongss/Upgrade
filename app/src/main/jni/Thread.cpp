@@ -5,12 +5,8 @@
 #include <unistd.h>
 #include "Thread.h"
 #include "inspiry_log.h"
+#include "InspiryType.h"
 #define LOG_TAG "Thread"
-#define NO_ERROR 0L
-#define UNKNOWN_ERROR 0x80000000;
-#define true (0 == 0)
-#define false (!true)
-#define INVALID_OPERATION   -ENOSYS
 Thread::Thread() : mThread(-1), mLock("Thread::mLock"), mStatus(NO_ERROR),
             mExitPending(false), mRunning(false),mTid(-1)
 {
@@ -24,7 +20,7 @@ int32_t Thread::readyToRun()
 {
     return NO_ERROR;
 }
-int CreateRawThreadEtc(int (*entryFunction)(void*) ,
+int CreateRawThreadEtc(void* (*entryFunction)(void*) ,
                               void *userData,
                               const char* threadName,
                               int32_t threadPriority,
@@ -41,15 +37,14 @@ int CreateRawThreadEtc(int (*entryFunction)(void*) ,
         pthread_attr_setstacksize(&attr, threadStackSize);
     }
 
-    errno = 0;
     pthread_t thread;
     int result = pthread_create(&thread, &attr,
                                 entryFunction, userData);
     pthread_attr_destroy(&attr);
     if (result != 0) {
-        LOGE(LOG_TAG,"androidCreateRawThreadEtc failed (entry=%p, res=%d, errno=%d)\n"
+        LOGE(LOG_TAG,"androidCreateRawThreadEtc failed (entry=%p, res=%d)\n"
                       "(android threadPriority=%d)",
-              entryFunction, result, errno, threadPriority);
+              entryFunction, result, threadPriority);
         return 0;
     }
 
@@ -98,7 +93,7 @@ int32_t Thread::run(const char* name, int32_t priority, size_t stack)
 
     // Exiting scope of mLock is a memory barrier and allows new thread to run
 }
-int Thread::_threadLoop(void* user)
+void* Thread::_threadLoop(void* user)
 {
     Thread* const self = static_cast<Thread*>(user);
     // this is very useful for debugging with gdb
@@ -150,7 +145,7 @@ int Thread::_threadLoop(void* user)
 
     } while(1);
 
-    return 0;
+    return (void*)0;
 }
 void Thread::requestExit()
 {
