@@ -21,13 +21,24 @@ public:
     int upgrade(const char * path, const char * md5path);
     const char * getTargetVersion();
     int setEventListener( EventListener * listener);
+    const char * getDeviceName();
 
 public:
+    /**
+     * used for EventListener
+     */
     typedef enum
     {
         EventTypeUpgradeSuccess=0x01000001,
-        EventTypeUpgradeFail
+        EventTypeUpgradeFail,
+        /**
+         * arg1 是升级的百分比，是个大概值
+         */
+        EventTypeUpgradeProgress
     }EventType;
+private:
+    friend class Uart;
+    void onEvent( int what, int arg1, int arg2);
 private:
     friend class UpdateThread;
     /**
@@ -41,7 +52,7 @@ private:
     int upgradeImp();
 
 private:
-    char mPath[128];
+    char mDeviceName[128];
     const int mBaudrate;
     const int mParity;
     const int mStop;

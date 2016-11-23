@@ -5,6 +5,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <string.h>
 #include <termios.h>//com
 #include "Com.h"
 #include "InspiryLog.h"
@@ -152,7 +153,6 @@ int Com::setConfig(int baudrate, int bits, int stop,int parity ) {
     struct termios new_cfg;
     struct termios old_cfg;
     int speed;
-    Mutex::Autolock _l(mLock);
     if (tcgetattr(mHandle, &old_cfg) != 0)
     {
         LOGE(LOG_TAG, "tcgetattr error!!!");

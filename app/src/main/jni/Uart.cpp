@@ -4,17 +4,23 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <errno.h>
+#include <string.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 #include "Uart.h"
 #include "InspiryLog.h"
+#include "SerialDevice.h"
+
 #define LOG_TAG "Uart"
 
-Uart::Uart(const char *name, int baudrate, int bits, int stop,int parity):
+Uart::Uart(SerialDevice * serial_device, const char *name, int baudrate, int bits, int stop,int parity):
 mCom(name),
 mBaudrate(baudrate),
 mBits(bits),
 mStop(stop),
 mParity(parity),
-mCmd(&mCom)
+mCmd(&mCom),
+mSerialDevice(serial_device)
 {
     memset(mVersion, 0, sizeof(mVersion));
     memset(mProduceName, 0, sizeof(mProduceName));
@@ -119,7 +125,10 @@ int Uart::upgread(const char *file, const char *md5file) {
     memcpy(Smart_info.state, "     ", 5);
     memset(Smart_buf, 0, sizeof(Smart_buf));
 
-    getFileMd5(file, Smart_info.MD5);
+    if(getFileMd5(file, Smart_info.MD5)!= 0)
+    {
+        return -1;
+    }
 
     sprintf(Smart_buf, "%08d%07d%08d%5s%32s", 0xd00000, fileLen, 0xd00000 + fileLen, "     ",
             Smart_info.MD5);
@@ -177,6 +186,7 @@ int Uart::upgread(const char *file, const char *md5file) {
 
     while(fileAddr < fileLen)
     {
+        int percent = 0;
         BYTE _tmpBuf[(UART_PACKET_SIZE)];
         int RemainingSizes = fileLen - fileAddr;
         /*
@@ -199,6 +209,9 @@ int Uart::upgread(const char *file, const char *md5file) {
             goto ERROR1;
         }
         fileAddr += needLen;
+
+        percent = fileAddr*100/fileLen;
+        mSerialDevice->onEvent(SerialDevice::EventTypeUpgradeProgress, percent, 0);
     }
 
     fclose(pMyFile);
@@ -238,11 +251,57 @@ int Uart::getVersion(char * pVersionBuf, int lenV,
 }
 
 int Uart::getFilesize(const char *path) {
-    return 0;
+
+    unsigned long filesize = -1;
+    struct stat statbuff;
+    if (stat(path, &statbuff) < 0)
+    {
+        return filesize;
+    }
+    else
+    {
+        filesize = statbuff.st_size;
+    }
+    return filesize;
 }
 
 int Uart::getFileMd5(const char *path, char *buf) {
-    return 0;
+    FILE *stream;
+    char recvBuf[256] = {0};
+    char cmdBuf[256] = {0};
+
+    memset(recvBuf, 0, 256);
+    memset(cmdBuf, 0, 256);
+
+    if (NULL == path)
+        return 0;
+
+    sprintf(cmdBuf, "md5sum %s", path);
+    stream = popen(cmdBuf, "r");
+    if (NULL == stream) //added for exception
+    {
+        LOGD(LOG_TAG, "Call popen function failed");
+        return -1;
+    }
+    fread(recvBuf, sizeof(char), sizeof(recvBuf) - 1, stream);
+    pclose(stream);
+
+    LOGD(LOG_TAG,"getFileMd5 recvBuf=%s", recvBuf);
+
+    if (strlen(recvBuf) >= 32)
+    {
+        memcpy(buf, recvBuf, 32);
+    }
+    else
+    {
+        LOGD(LOG_TAG,"getFileMd5 recvBuf < 32");
+        return -1;
+    }
+
+
+    LOGD(LOG_TAG,"getFileMd5 md5:%s", recvBuf);
+    LOGD(LOG_TAG,"getFileMd5 buf=%s", buf);
+    return  0;
 }
 
 int Uart::upgradeApp(const char *file, const char *md5file) {
@@ -256,13 +315,18 @@ int Uart::upgradeApp(const char *file, const char *md5file) {
         LOGE(LOG_TAG, "upgradeApp getStatus error(%d)", ret);
         return -1;
     }
+    /**
+     * 如果当前处于UPDATE_MODE，为了统一处理，我们下边也要进行UPDATE_MODE模式设置，这并不冲突
+     * 所以我们把下边的代码段去掉
+     */
+    /*
     if(status.status == UPDATE_MODE)
     {
         LOGD(LOG_TAG,  "upgradeApp UPDATE_MODE");
         LOGE(LOG_TAG,  "upgradeApp UPDATE_MODE Not Implement!!!");
-        return -1;
+
     }
-    else
+    else*/
     {
         int baud_rate = 115200;
         LOGD(LOG_TAG, "upgradeApp set baudrate up to %d ", baud_rate);
@@ -277,17 +341,25 @@ int Uart::upgradeApp(const char *file, const char *md5file) {
         if(ret != CMD_OK)
         {
             LOGE(LOG_TAG, "upgradeApp setMode error(%d)", ret);
+            goto ERROR1;
             return -1;
         }
+        /**
+         * Notice：下位机程序切换，需要等待合适时间，需要解决这个问题
+         */
+        sleep(3);
+
         ret = mCmd.getStatus(&status);
         if( ret != CMD_OK)
         {
             LOGE(LOG_TAG, "upgradeApp getStatus error(%d)", ret);
+            goto ERROR1;
             return -1;
         }
         if(status.status != UPDATE_MODE)
         {
             LOGE(LOG_TAG, "upgradeApp status != UPDATE_MODE");
+            goto ERROR1;
             return -1;
         }
         ret = this->upgread(file, md5file);
@@ -295,6 +367,7 @@ int Uart::upgradeApp(const char *file, const char *md5file) {
         if(ret != CMD_OK)
         {
             LOGE(LOG_TAG, "upgradeApp error(%d)", ret);
+            goto ERROR1;
             return -1;
         }
         LOGD(LOG_TAG, "upgradeApp set baudrate back to %d ", mBaudrate);
@@ -306,7 +379,7 @@ int Uart::upgradeApp(const char *file, const char *md5file) {
             LOGE(LOG_TAG, "upgradeApp setUART error(%d)", ret);
             return -1;
         }
-        LOGD(LOG_TAG, "upgradeApp set Mode back to UPDATE_MODE ");
+        LOGD(LOG_TAG, "upgradeApp set Mode back to USER_MODE ");
 
         ret = mCmd.setMode(USER_MODE);
         if(ret != CMD_OK)
@@ -316,6 +389,32 @@ int Uart::upgradeApp(const char *file, const char *md5file) {
         }
         return ret;
     }
+    /**
+     * ERROR1 代码段主要是处理 在波特率设置以后，升级出现失败，那么我们要恢复以前的波特率
+     */
+ERROR1:
+    LOGD(LOG_TAG, "upgradeApp set baudrate back to %d ", mBaudrate);
+    ret = mCmd.setUART(mBaudrate, mBits, mStop, mParity);
+
+    if(ret != CMD_OK)
+    {
+        LOGE(LOG_TAG, "upgradeApp setUART error(%d)", ret);
+        return -1;
+    }
+    /**
+     * 升级失败后，就不要设置回USER_MODE了，因为在USER_MODE模式下运行的程序已经被破坏了
+     */
+    /*
+    LOGD(LOG_TAG, "upgradeApp set Mode back to USER_MODE ");
+
+    ret = mCmd.setMode(USER_MODE);
+    if(ret != CMD_OK)
+    {
+        LOGE(LOG_TAG, "upgradeApp setMode error(%d)", ret);
+        return -1;
+    }
+     */
+    return -1;
 
 }
 

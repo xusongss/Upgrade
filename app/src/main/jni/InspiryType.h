@@ -18,5 +18,6 @@
 #define NO_ERROR (0)
 #define UNKNOWN_ERROR (0x80000000)
 #define INVALID_OPERATION (-ENOSYS)
+#include <string.h>
 
 #endif //BARCODEUPDATE2_INSPIRYTYPE_H

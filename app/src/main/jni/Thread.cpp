@@ -97,7 +97,7 @@ void* Thread::_threadLoop(void* user)
 {
     Thread* const self = static_cast<Thread*>(user);
     // this is very useful for debugging with gdb
-    self->mTid = gettid();
+    //self->mTid = gettid();
 
 
     bool first = true;

@@ -173,7 +173,17 @@ JNIEXPORT jint JNICALL Java_com_ipspiry_barcodeupdate_BarCodeSerialUpdate_closeN
         LOGE(LOG_TAG, "closeNative: pdevice is NULL");
         return -1;
     }
-    return pdevice->closeDevice();
+    if(pdevice->closeDevice() == 0)
+    {
+        delete  pdevice;
+        LOGD(LOG_TAG, "closeNative: success");
+        env->SetLongField(thizz, g_field.mDeviceNativePointer, 0);
+        return 0;
+    }
+    else {
+        LOGE(LOG_TAG, "closeNative: pdevice error");
+        return -1;
+    }
 }
 /*
  * updateNative

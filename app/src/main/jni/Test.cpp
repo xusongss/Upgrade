@@ -21,40 +21,78 @@ public:
         if(what == SerialDevice::EventTypeUpgradeSuccess)
         {
             LOGD(LOG_TAG,"SerialDevice::EventTypeUpgradeSuccess");
+            mLock.unlock();
         }
-        else
+        else if(what == SerialDevice::EventTypeUpgradeFail)
         {
             LOGD(LOG_TAG,"SerialDevice::EventTypeUpgradeFail");
+            mLock.unlock();
         }
-        mLock.unlock();
+        else if(what == SerialDevice::EventTypeUpgradeProgress)
+        {
+            LOGD(LOG_TAG, "upgrade progess =%d%%", arg1);
+        }
+
     }
 private:
     Mutex mLock;
 };
-int main()
+class TestThread :public  Thread
 {
+public:
+    TestThread(const char * name);
+    virtual bool        threadLoop();
+private:
+    const char * mName;
+};
+TestThread::TestThread(const char *name)
+:mName(name)
+{
+
+}
+bool TestThread::threadLoop() {
     const char * version = NULL;
     EventListenerTest *mListener;
     SerialDevice * mSerialDevice;
     mListener= new EventListenerTest();
-     mSerialDevice = new SerialDevice("/dev/ttyUSB0", 9600, 0,1,8);
+    mSerialDevice = new SerialDevice("/dev/ttyUSB0", 9600, 0,1,8);
+    LOGD(LOG_TAG, "%s   Upgrade test!", mName);
     if(mSerialDevice == NULL)
     {
-        LOGE(LOG_TAG, "mSerialDevice init error!!!");
+        LOGE(LOG_TAG, "%s   mSerialDevice init error!!!", mName);
         return 0;
     }
     if(mSerialDevice->openDevice() != 0)
     {
-        LOGE(LOG_TAG, "mSerialDevice open error!!!");
+        LOGE(LOG_TAG, "%s   mSerialDevice open error!!!",mName);
+        return 0;
     }
     mSerialDevice->setEventListener(mListener);
     if((version = mSerialDevice->getTargetVersion()) == NULL)
     {
-        LOGE(LOG_TAG, "mSerialDevice getTargetVersion error!!!");
+        LOGE(LOG_TAG, "%s   mSerialDevice getTargetVersion error!!!", mName);
     }
+    else
+    {
+        LOGD(LOG_TAG, "%s   get version %s",mName, version);
+    }
+    mSerialDevice->upgrade("./SmartReader", "./SmartReader");
     mListener->wait();
     delete mListener;
     delete mSerialDevice;
+    return false;
+}
+int main()
+{
+
+
+    TestThread mTest1("Test-1");
+    mTest1.run();
+    TestThread mTest2("mTest2");
+    mTest1.run();
+    TestThread mTest3("mTest3");
+    mTest1.run();
+
 
 
     return 0;

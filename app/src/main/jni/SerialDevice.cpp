@@ -16,11 +16,11 @@ mBits(bits),
 mListener(NULL),
 mUpdateThread(this),
 mIsUpdateing(false),
-mUart(device, baudrate, bits, stop, parity)
+mUart(this,device, baudrate, bits, stop, parity)
 {
-    memset((void*)mPath, 0, sizeof(mPath));
-    strncpy(mPath, device, sizeof(mPath)-1);
-    LOGD(LOG_TAG,"SerialDevice construction is called device:%s", mPath);
+    memset((void*)mDeviceName, 0, sizeof(mDeviceName));
+    strncpy(mDeviceName, device, sizeof(mDeviceName)-1);
+    LOGD(LOG_TAG,"SerialDevice construction is called device:%s", mDeviceName);
 }
 int SerialDevice::openDevice()
 {
@@ -64,15 +64,18 @@ int SerialDevice::upgradeImp()
     int ret = 0;
     int event = EventTypeUpgradeFail;
     Mutex::Autolock _l(mLock);
-    ret = mUart.upgradeApp(mPath, mMd5Path);
+    ret = mUart.upgradeApp(mPackagePath, mMd5Path);
     event = ret == 0 ? EventTypeUpgradeSuccess:EventTypeUpgradeFail;
 
-    if (mListener)
-    {
-        mListener->onEvent(event, 0, 0);
-    }
+    this->onEvent(event, 0, 0);
     mIsUpdateing = false;
     return 0;
 }
 
 
+void SerialDevice::onEvent(int what, int arg1, int arg2) {
+    if (mListener)
+    {
+        mListener->onEvent(what, arg1, arg2);
+    }
+}

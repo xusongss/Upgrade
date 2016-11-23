@@ -8,10 +8,10 @@
 
 #include "Com.h"
 #include "UartCmd.h"
-
+class SerialDevice;
 class Uart {
 public:
-    Uart(const char * name, int baudrate, int bits, int stop,int parity );
+    Uart(SerialDevice * serial_device, const char * device_name, int baudrate, int bits, int stop,int parity );
     ~Uart();
     int open();
     int close();
@@ -25,6 +25,7 @@ private:
     int getFilesize(const char * path);
     int getFileMd5(const char * path, char * buf);
 private:
+    SerialDevice * mSerialDevice;
     UartCmd mCmd;
     Com mCom;
     Mutex mLock;

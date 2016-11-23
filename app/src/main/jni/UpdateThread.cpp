@@ -24,7 +24,7 @@ int32_t UpdateThread::waitBeginRun(Mutex & lock)
 }
 bool UpdateThread::threadLoop()
 {
-    LOGD(LOG_TAG, "UpdateThread threadLoop")
+    LOGD(LOG_TAG, "UpdateThread threadLoop");
     mDevice->upgradeImp();
     // return false indicate this threadLoop fun only run one time
     return false;
