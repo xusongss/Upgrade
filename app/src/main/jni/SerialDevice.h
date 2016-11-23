@@ -7,15 +7,21 @@
 
 #include "EventListener.h"
 #include "Mutex.h"
-class UpdateImplement;
+#include "UpdateThread.h"
+#include "Uart.h"
+
 class SerialDevice {
 public:
     SerialDevice(const char * device, int baudrate, int parity, int stop, int bits);
+    /**
+     * All of those method is used by JNI
+     */
     int openDevice();
     int closeDevice();
     int upgrade(const char * path, const char * md5path);
-    int setEventListener( EventListener * listener);
     const char * getTargetVersion();
+    int setEventListener( EventListener * listener);
+
 public:
     typedef enum
     {
@@ -23,8 +29,17 @@ public:
         EventTypeUpgradeFail
     }EventType;
 private:
-    friend class UpdateImplement;
-    int upgreadEvent(int status);
+    friend class UpdateThread;
+    /**
+    * All of thos method is used by UpdateThread
+    */
+
+   /**
+    * upgradeImp
+    * this function is always return 0
+    */
+    int upgradeImp();
+
 private:
     char mPath[128];
     const int mBaudrate;
@@ -33,9 +48,13 @@ private:
     const int mBits;
     EventListener * mListener;
 private:
-    UpdateImplement *mImplement;
+    UpdateThread mUpdateThread;
     Mutex mLock;
-    bool mIsUpdate;
+    bool mIsUpdateing;
+private:
+    Uart mUart;
+    char mPackagePath[128];
+    char mMd5Path[128];
 };
 
 

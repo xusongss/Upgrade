@@ -10,11 +10,9 @@
 #endif
 #ifndef true
     #define true (0 == 0)
-#endif
-
-#ifndef true
     #define false (!true)
 #endif
+
 
 
 #define NO_ERROR (0)

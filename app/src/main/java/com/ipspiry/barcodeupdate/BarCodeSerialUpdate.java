@@ -22,10 +22,7 @@ public class BarCodeSerialUpdate {
     //
     private static  boolean mIsCheckAuthorization=false;
 
-    //
-    //Do Not Modify This Field, It Is Used By Native Code!!!
-    //
-    private int mDeviceNativePointer;
+
 
     private EventHandler mEventHandler;
     private OnEventAvailableListener mOnEventAvailableListener;
@@ -195,6 +192,10 @@ public class BarCodeSerialUpdate {
      * Called at the time of the class is load
      */
     private static native void  nativeClassInit();
+    //
+    //Do Not Modify This Field, It Is Used By Native Code!!!
+    //
+    private long mDeviceNativePointer;
     static{
         System.loadLibrary("barcodeupdate");
         nativeClassInit();

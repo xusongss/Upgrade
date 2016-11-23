@@ -5,7 +5,7 @@
 #include <string.h>
 #include "SerialDevice.h"
 #include "inspiry_log.h"
-#include "UpdateImplement.h"
+#include "UpdateThread.h"
 #include <pthread.h>
 #include <unistd.h>
 SerialDevice::SerialDevice(const char *device, int baudrate, int parity, int stop, int bits):
@@ -14,65 +14,65 @@ mParity(parity),
 mStop(stop),
 mBits(bits),
 mListener(NULL),
-mIsUpdate(false)
+mUpdateThread(this),
+mIsUpdateing(false),
+mUart(device, baudrate, bits, stop, parity)
 {
     memset((void*)mPath, 0, sizeof(mPath));
     strncpy(mPath, device, sizeof(mPath)-1);
-    mImplement = new UpdateImplement(this);
     LOGD(LOG_TAG,"SerialDevice construction is called device:%s", mPath);
 }
 int SerialDevice::openDevice()
 {
     LOGD(LOG_TAG, "openDevice is called ");
-    return 0;
+    return mUart.open();
 };
 int SerialDevice::closeDevice()
 {
     LOGD(LOG_TAG, "closeDevice is called");
-    return 0;
+    return mUart.close();
 };
 int SerialDevice::upgrade(const char * path, const char * md5path)
 {
     LOGD(LOG_TAG, "upgrade: path=%s md5Path=%s", path, md5path);
-    /*
-    pthread_t id;
-    pthread_create(&id, NULL, threadLoop, (void*)this);
-     */
-    if(mLock.tryLock()!= 0 || mIsUpdate || mImplement->isRunning())
+    if(mLock.tryLock()!= 0 || mIsUpdateing || mUpdateThread.isRunning())
     {
-        return 1;
+        return 0;
     }
-    mImplement->run();
-    mImplement->waitBeginRun(mLock);
-    /*
-    if(mListener != NULL)
-    {
-        LOGD(LOG_TAG, "upgrade: post event");
-        mListener->onEvent(SerialDevice::EventTypeUpgradeSuccess, 0, 0);
-    }
-     */
-    mIsUpdate = true;
+    strcpy(mPackagePath, path);
+    strcpy(mMd5Path, md5path);
+    mUpdateThread.run();
+    mUpdateThread.waitBeginRun(mLock);
+    mIsUpdateing = true;
     mLock.unlock();
     return 0;
 }
 const char * SerialDevice::getTargetVersion()
 {
     LOGD(LOG_TAG, "getTargetVersion is called");
-    return "1.0.2";
+    return mUart.getVersion();
+
 }
 int SerialDevice::setEventListener(EventListener * listener)
 {
+    Mutex::Autolock _l(mLock);
     LOGD(LOG_TAG, "setEventListener is called");
     mListener = listener;
 }
-int SerialDevice::upgreadEvent(int status) {
+int SerialDevice::upgradeImp()
+{
+    int ret = 0;
+    int event = EventTypeUpgradeFail;
     Mutex::Autolock _l(mLock);
-    sleep(10);
+    ret = mUart.upgradeApp(mPath, mMd5Path);
+    event = ret == 0 ? EventTypeUpgradeSuccess:EventTypeUpgradeFail;
+
     if (mListener)
     {
-        mListener->onEvent(status, 0, 0);
+        mListener->onEvent(event, 0, 0);
     }
-    mIsUpdate = false;
+    mIsUpdateing = false;
     return 0;
 }
+
 
