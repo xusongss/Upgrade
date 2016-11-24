@@ -4,7 +4,7 @@
 #include <unistd.h>
 #include "UpdateThread.h"
 #include "SerialDevice.h"
-#include "inspiry_log.h"
+#include "InspiryLog.h"
 
 #define LOG_TAG "UpdateThread"
 UpdateThread::UpdateThread(SerialDevice * device):

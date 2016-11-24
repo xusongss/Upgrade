@@ -75,6 +75,10 @@ public class SerialConfig {
     /*
         Save Parameters To File
      */
+    public int SaveConfig()
+    {
+        return 0;
+    }
     private SerialConfig(){
         loadParameters();
     }

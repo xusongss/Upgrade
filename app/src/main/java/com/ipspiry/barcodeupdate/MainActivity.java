@@ -7,22 +7,28 @@ import android.util.Log;
 
 public class MainActivity extends AppCompatActivity {
     private static String TAG="MainActivity";
-    private SerialConfig mConfig;
-    private BarCodeSerialUpdate mUpdate;
+    private BarCodeSerialUpdatewrapper updatewrapper;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        mConfig = SerialConfig.getInstance();
-        mUpdate = BarCodeSerialUpdate.buildInstance(mConfig);
-        assert (mUpdate !=null);
-        mUpdate.setOnEventAvailableListener(new BarCodeSerialUpdate.OnEventAvailableListener() {
+    }
+    private void initUpgradeModule()
+    {
+        updatewrapper.setOnEventAvailableListener(new OnEventAvailableListener() {
             public void OnEventAvailable(Message msg){
                 Log.d(TAG, "MainActivity:Receive event:"+msg.what);
+                if(msg.what == BarCodeSerialUpdatewrapper.EventTypeUpgradeFail ||
+                        msg.what == BarCodeSerialUpdatewrapper.EventTypeUpgradeSuccess)
+                {
+                    try {
+                        updatewrapper.disConnectTarget();
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
             }
         });
-        mUpdate.getVersion();
-        mUpdate.update("/data/update.zip", "/data/md5.zip");
 
     }
 }

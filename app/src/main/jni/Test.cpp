@@ -1,3 +1,4 @@
+#include <unistd.h>
 #include "SerialDevice.h"
 #include "InspiryLog.h"
 
@@ -76,23 +77,30 @@ bool TestThread::threadLoop() {
     {
         LOGD(LOG_TAG, "%s   get version %s",mName, version);
     }
-    mSerialDevice->upgrade("./SmartReader", "./SmartReader");
+    mSerialDevice->upgrade("/home/xuss/SmartReader", "./SmartReader");
     mListener->wait();
     delete mListener;
     delete mSerialDevice;
     return false;
 }
-int main()
-{
+int main() {
 
 
-    TestThread mTest1("Test-1");
-    mTest1.run();
+    int i = 100;
+    char  testname[128];
+    while (i--) {
+        sprintf(testname, "Test-%d", 100 -i);
+        TestThread mTest1(testname);
+        mTest1.run();
+        mTest1.join();
+        sleep(20);
+    }
+/*
     TestThread mTest2("mTest2");
     mTest1.run();
     TestThread mTest3("mTest3");
     mTest1.run();
-
+*/
 
 
     return 0;

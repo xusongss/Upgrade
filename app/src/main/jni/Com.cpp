@@ -360,6 +360,3 @@ int Com::covBaudrate(int baudrate) {
     }
     return speed;
 }
-
-
-

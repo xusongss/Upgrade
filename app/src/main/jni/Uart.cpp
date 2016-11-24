@@ -189,16 +189,6 @@ int Uart::upgread(const char *file, const char *md5file) {
         int percent = 0;
         BYTE _tmpBuf[(UART_PACKET_SIZE)];
         int RemainingSizes = fileLen - fileAddr;
-        /*
-        if (fileLen - fileAddr >= writeSize)
-        {
-            needLen = writeSize;
-        }
-        else
-        {
-            needLen = fileLen - fileAddr;
-        }
-         */
         needLen = RemainingSizes >= writeSize ? writeSize: RemainingSizes;
         memset(_tmpBuf, 0, sizeof(_tmpBuf));
         fread((char *)_tmpBuf, sizeof(BYTE), needLen, pMyFile);
@@ -328,14 +318,6 @@ int Uart::upgradeApp(const char *file, const char *md5file) {
     }
     else*/
     {
-        int baud_rate = 115200;
-        LOGD(LOG_TAG, "upgradeApp set baudrate up to %d ", baud_rate);
-        ret = mCmd.setUART(baud_rate, mBits, mStop, mParity);
-        if(ret != CMD_OK)
-        {
-            LOGE(LOG_TAG, "upgradeApp setUART error(%d)", ret);
-            return -1;
-        }
         LOGD(LOG_TAG, "upgradeApp set Mode  to UPDATE_MODE ");
         ret = mCmd.setMode(UPDATE_MODE);
         if(ret != CMD_OK)
@@ -348,6 +330,15 @@ int Uart::upgradeApp(const char *file, const char *md5file) {
          * Notice：下位机程序切换，需要等待合适时间，需要解决这个问题
          */
         sleep(3);
+
+        int baud_rate = 115200;
+        LOGD(LOG_TAG, "upgradeApp set baudrate up to %d ", baud_rate);
+        ret = mCmd.setUART(baud_rate, mBits, mStop, mParity);
+        if(ret != CMD_OK)
+        {
+            LOGE(LOG_TAG, "upgradeApp setUART error(%d)", ret);
+            return -1;
+        }
 
         ret = mCmd.getStatus(&status);
         if( ret != CMD_OK)
@@ -370,10 +361,11 @@ int Uart::upgradeApp(const char *file, const char *md5file) {
             goto ERROR1;
             return -1;
         }
+
         LOGD(LOG_TAG, "upgradeApp set baudrate back to %d ", mBaudrate);
 
         ret = mCmd.setUART(mBaudrate, mBits, mStop, mParity);
-
+        sleep(1);
         if(ret != CMD_OK)
         {
             LOGE(LOG_TAG, "upgradeApp setUART error(%d)", ret);

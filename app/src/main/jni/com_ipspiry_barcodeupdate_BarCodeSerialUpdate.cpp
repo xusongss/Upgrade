@@ -7,15 +7,16 @@
 #include <string.h>
 #include <pthread.h>
 #include "com_ipspiry_barcodeupdate_BarCodeSerialUpdate.h"
-#include "inspiry_log.h"
 #include "SerialDevice.h"
 #include "EventListener.h"
+#include "InspiryLog.h"
 
 typedef struct  {
     jfieldID mDeviceNativePointer;
     jmethodID postEvent;
 }fields_t;
 static fields_t g_field;
+static SerialDevice * g_serialDevice = NULL;
 const char * BarCodeSerialUpdate_mDeviceNativePointer_Jni_Id = "mDeviceNativePointer";
 
 static JavaVM *gVM=NULL;
@@ -133,31 +134,50 @@ static void BarCodeSerialUpdate_setDeviceNativePointer(JNIEnv* env, jobject thiz
 }
 /**
  * openNative
+ * return   -1 open error
+ *          -2 device is opened
  */
 JNIEXPORT jint JNICALL Java_com_ipspiry_barcodeupdate_BarCodeSerialUpdate_openNative
         (JNIEnv *env, jobject thizz, jobject weakThiz, jstring path, jint baudrate, jint parity, jint stop, jint bits)
 {
 
     SerialDevice * pdevice = NULL;
-    const char * deviceName = path != NULL ? env->GetStringUTFChars(path, NULL):"/dev/ttyS0";
+    const char * deviceName = NULL;
+
+    if(g_serialDevice != NULL)
+    {
+        LOGE(LOG_TAG, "openNative: pdevice is already opened!!!");
+        return -2;
+    }
+    deviceName = path != NULL ? env->GetStringUTFChars(path, NULL):"/dev/ttyS0";
     pdevice = new SerialDevice(deviceName, baudrate, parity, stop, bits);
     if(pdevice == NULL)
     {
         LOGE(LOG_TAG, "openNative: pdevice is NULL!!!");
+        return -1;
     }
     BarCodeSerialUpdate_setDeviceNativePointer(env, thizz, pdevice);
 
     if(pdevice->openDevice() != 0)
     {
-        return 1;
+        LOGE(LOG_TAG, "openNative: open device is error!!!");
+        return -1;
     }
+    g_serialDevice = pdevice;
+
     jclass clazz = env->GetObjectClass(thizz);
     if (clazz == NULL) {
-        return 1;
+        goto ERROR;
+        return -1;
     }
     pdevice->setEventListener(new BarCodeSerialUpdateEventListener(env, weakThiz, clazz));
 
     return 0;
+    ERROR:
+        pdevice->closeDevice();
+        delete pdevice;
+        g_serialDevice = NULL;
+
 }
 /*
  * closeNative
@@ -184,6 +204,8 @@ JNIEXPORT jint JNICALL Java_com_ipspiry_barcodeupdate_BarCodeSerialUpdate_closeN
         LOGE(LOG_TAG, "closeNative: pdevice error");
         return -1;
     }
+    g_serialDevice = NULL;
+    return 0;
 }
 /*
  * updateNative

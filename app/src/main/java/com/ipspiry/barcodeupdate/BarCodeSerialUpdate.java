@@ -23,7 +23,7 @@ public class BarCodeSerialUpdate {
     private static  boolean mIsCheckAuthorization=false;
 
 
-
+    private SerialConfig mConfig;
     private EventHandler mEventHandler;
     private OnEventAvailableListener mOnEventAvailableListener;
 
@@ -31,7 +31,6 @@ public class BarCodeSerialUpdate {
         public EventHandler(Looper looper) {
             super(looper);
         }
-
         @Override
         public void handleMessage(Message msg) {
             if (mOnEventAvailableListener != null) {
@@ -39,9 +38,11 @@ public class BarCodeSerialUpdate {
             }
         }
     }
+    /*
     public interface OnEventAvailableListener {
         public void OnEventAvailable(Message msg);
     }
+    */
 
     //
     //Static Method
@@ -50,35 +51,17 @@ public class BarCodeSerialUpdate {
         Log.e(TAG, "checkFile Is Not Implement!!!");
         return false;
     }
-
-    public static BarCodeSerialUpdate buildInstance(SerialConfig config){
-        Log.d(TAG,"buildInstance ...");
+    public static BarCodeSerialUpdate getInstance()
+    {
         if(mUpdate != null) {
             Log.e(TAG, "Another Instance Is Opening, Close It Before buildInstance!!!");
             return null;
         }
-        try {
-            checkSecurity(config.getPath());
-        } catch (Exception e) {
-            e.printStackTrace();
-            Log.e(TAG, "checkSecurity Error!!!");
-            return null;
-        }
         mUpdate = new BarCodeSerialUpdate();
-        if(!mUpdate.openDevice(config.getPath(), config.getBaudrate(), config.getParity(),config.getStop(),config.getBits())) {
-            Log.e(TAG, "buildInstance Fail!!!");
-        }else{
-            Log.d(TAG,"buildInstance successful.");
-        }
+
         return mUpdate;
     }
-    public static boolean closeInstace(BarCodeSerialUpdate instance){
-        Log.v(TAG, "closeInstace");
-        instance.closeDevice();
-        mUpdate = null;
-        return true;
-    }
-    private static boolean checkSecurity(String path)throws SecurityException, IOException, Exception
+    public static boolean checkSecurity(String path)throws SecurityException, IOException, Exception
     {
         Log.v(TAG, "checkSecurity path:"+path);
         if(!mIsCheckAuthorization)
@@ -110,6 +93,10 @@ public class BarCodeSerialUpdate {
         Log.v(TAG, "checkSecurity successful");
         return true;
     }
+    public void setConfig(SerialConfig config)
+    {
+        mConfig = config;
+    }
     /*
         Object Method
      */
@@ -126,9 +113,14 @@ public class BarCodeSerialUpdate {
             mEventHandler = null;
         }
     }
-    private boolean openDevice(String device, int baudrate, int parity, int stop, int bits){
+    public boolean open()
+    {
         int ret = 0;
-        ret = openNative( new WeakReference<BarCodeSerialUpdate>(this), device, baudrate, parity, stop, bits);
+        ret = openNative( new WeakReference<BarCodeSerialUpdate>(this),
+                mConfig.getPath(),
+                mConfig.getBaudrate(),
+                mConfig.getParity(),
+                mConfig.getStop(), mConfig.getBits());
         if(ret == 0) {
             return true;
         }
@@ -136,7 +128,8 @@ public class BarCodeSerialUpdate {
             return false;
         }
     }
-    private boolean closeDevice(){
+    public boolean close()
+    {
         int ret = 0;
         ret = closeNative();
         if(ret == 0) {

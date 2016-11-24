@@ -4,8 +4,8 @@
 #define LOG_TAG "SerialDevice"
 #include <string.h>
 #include "SerialDevice.h"
-#include "inspiry_log.h"
 #include "UpdateThread.h"
+#include "InspiryLog.h"
 #include <pthread.h>
 #include <unistd.h>
 SerialDevice::SerialDevice(const char *device, int baudrate, int parity, int stop, int bits):

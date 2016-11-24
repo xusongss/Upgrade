@@ -14,7 +14,6 @@ LOCAL_SRC_FILES := \
 	Uart.cpp\
 	SerialDevice.cpp\
 	Com.cpp\
-	inspiry_log.cpp\
 	
 
 LOCAL_CFLAGS := -fpermissive
@@ -37,7 +36,6 @@ LOCAL_SRC_FILES := \
 	Uart.cpp\
 	SerialDevice.cpp\
 	Com.cpp\
-	inspiry_log.cpp\
 	
 
 LOCAL_CFLAGS := -fpermissive

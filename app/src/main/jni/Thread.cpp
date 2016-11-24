@@ -4,8 +4,9 @@
 
 #include <unistd.h>
 #include "Thread.h"
-#include "inspiry_log.h"
 #include "InspiryType.h"
+#include "InspiryLog.h"
+
 #define LOG_TAG "Thread"
 Thread::Thread() : mThread(-1), mLock("Thread::mLock"), mStatus(NO_ERROR),
             mExitPending(false), mRunning(false),mTid(-1)
